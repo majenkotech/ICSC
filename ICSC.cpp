@@ -71,6 +71,7 @@ void _ICSC::begin(unsigned char station, unsigned long baud, HardwareSerial *sde
     begin(station, baud, sdev, -1);
 }
 
+
 #if defined(_USE_USB_FOR_SERIAL_)
 void _ICSC::begin(unsigned char station, unsigned long baud, USBSerial *sdev)
 {
@@ -80,6 +81,7 @@ void _ICSC::begin(unsigned char station, unsigned long baud, USBSerial *sdev)
 void _ICSC::begin(unsigned char station, unsigned long baud, USBSerial *sdev, int dePin)
 {
     _hserial = NULL;
+    _sserial = NULL;    
     _userial = sdev;
     _userial->begin(baud);
     _station = station;
@@ -107,9 +109,39 @@ void _ICSC::begin(unsigned char station, unsigned long baud, USBSerial *sdev, in
 }
 #endif
 
+void _ICSC::begin(unsigned char station, unsigned long baud, SoftwareSerial *sdev, int dePin) {
+    _userial = NULL;
+    _hserial = NULL;
+    _sserial = sdev;
+    _sserial->begin(baud);
+    _station = station;
+    _dePin = dePin;
+    _baud = baud;
+
+#ifndef ICSC_NO_STATS
+    _stats.oob_bytes = 0;
+    _stats.tx_packets = 0;
+    _stats.tx_bytes = 0;
+    _stats.rx_packets = 0;
+    _stats.rx_bytes = 0;
+    _stats.cs_errors = 0;
+    _stats.cb_run = 0;
+    _stats.cb_bad = 0;
+#endif
+
+    // Reset the state machine
+    reset();
+    if(_dePin != -1) {
+        pinMode(_dePin, OUTPUT);
+        digitalWrite(_dePin, LOW);
+    }
+
+}
+
 void _ICSC::begin(unsigned char station, unsigned long baud, HardwareSerial *sdev, int dePin)
 {
     _userial = NULL;
+    _sserial = NULL;
     _hserial = sdev;
     _hserial->begin(baud);
     _station = station;
@@ -141,12 +173,17 @@ void _ICSC::serialFlush()
     if (_hserial) {
         _hserial->flush();
     }
+
 }
 
 void _ICSC::serialWrite(unsigned char b) 
 {
     if (_hserial) {
         _hserial->write(b);
+    }
+
+    if (_sserial) {
+        _sserial->write(b);
     }
 
 #if defined(_USE_USB_FOR_SERIAL_)
@@ -162,6 +199,10 @@ int _ICSC::serialRead()
         return _hserial->read();
     }
 
+    if(_sserial) {
+        return _sserial->read();
+    }
+
 #if defined(_USE_USB_FOR_SERIAL_)
     if (_userial) {
         return _userial->read();
@@ -173,6 +214,10 @@ int _ICSC::serialAvailable()
 {
     if (_hserial) {
         return _hserial->available();
+    }
+
+    if(_sserial) {
+        return _sserial->available();
     }
 
 #if defined(_USE_USB_FOR_SERIAL_)

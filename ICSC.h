@@ -36,6 +36,8 @@
 #include <WProgram.h>
 #endif
 
+ #include <SoftwareSerial.h>
+
 // Uncomment the definition of ICSC_DYNAMIC if you want to use
 // dynamic memory allocation
 //#define ICSC_DYNAMIC
@@ -160,6 +162,8 @@ class _ICSC {
 
         // Serial device in use
         HardwareSerial *_hserial;
+        SoftwareSerial *_sserial;
+
 #if defined(_USE_USB_FOR_SERIAL_)
         USBSerial *_userial;
 #else
@@ -195,6 +199,9 @@ class _ICSC {
 #endif
         void begin(unsigned char station, unsigned long baud, HardwareSerial *sdev);
         void begin(unsigned char station, unsigned long baud, HardwareSerial *sdev, int dePin);
+
+        void begin(unsigned char station, unsigned long baud, SoftwareSerial *sdev, int dePin);
+
         boolean send(unsigned char origin,unsigned char station, char command, unsigned char len=0, char *data=NULL);
         boolean send(unsigned char station, char command, unsigned char len=0, char *data=NULL);
         boolean send(unsigned char station, char command,char *str);
